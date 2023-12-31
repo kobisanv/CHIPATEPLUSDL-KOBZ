@@ -2,7 +2,6 @@
 #include <iostream>
 #include <cstring>
 #include <SDL.h>
-
 using namespace std;
 
 class SDL_T {
@@ -57,21 +56,18 @@ struct CHIP_8 {
 
 // Initialize SDL
 bool INIT(SDL_T *sdl, const CONFIG_T config) {
-    // Initialize SDL subsystems for video, audio, and timer
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER) != 0) {
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER) != 0) { // Initialize SDL subsystems for video, audio, and timer
         SDL_Log("Could not initialize SDL subsystems! %s\n", SDL_GetError());
         return false; }
 
-    // Create SDL window
-    sdl->window = SDL_CreateWindow("CHIP-8 Emulator", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+    sdl->window = SDL_CreateWindow("CHIP-8 Emulator", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, // Create SDL window
                                    config.window_width * config.scale_factor, config.window_height * config.scale_factor, 0);
 
     if (!sdl->window) {
         SDL_Log("Could not create SDL window %s\n", SDL_GetError());
         return false; }
 
-    // Create SDL renderer for hardware acceleration
-    sdl->renderer = SDL_CreateRenderer(sdl->window, -1, SDL_RENDERER_ACCELERATED);
+    sdl->renderer = SDL_CreateRenderer(sdl->window, -1, SDL_RENDERER_ACCELERATED); // Create SDL renderer for hardware acceleration
     if (!sdl->renderer) {
         SDL_Log("Could not create SDL renderer %s\n", SDL_GetError());
         return false;
@@ -123,8 +119,7 @@ bool init_chip8(CHIP_8 *chip8, const char rom_name[]) {
             0xF0, 0x80, 0xF0, 0x80, 0x80,   // F
     };
 
-    // Load font into RAM
-    memcpy(&chip8->ram[0], font, sizeof(font));
+    memcpy(&chip8->ram[0], font, sizeof(font)); // Load font into RAM
 
     FILE *rom = fopen(rom_name, "rb");
     if (!rom) {
@@ -141,8 +136,7 @@ bool init_chip8(CHIP_8 *chip8, const char rom_name[]) {
         SDL_Log("Rom file %s is too big! Rom Size: %llu, Max Size Allowed: %llu", rom_name, (long long unsigned)rom_size, (long long unsigned)max_size);
         return false; }
 
-    // Load ROM
-    if (fread(&chip8->ram[entry_point], rom_size, 1, rom) != 1) {
+    if (fread(&chip8->ram[entry_point], rom_size, 1, rom) != 1) { // Load ROM
         SDL_Log("Could not read ROM file %s into CHIP-8 memory: %s\n", rom_name, strerror(errno));
         fclose(rom);
         return false;
@@ -167,8 +161,6 @@ void final_cleanup(const SDL_T sdl) {
 
 // Clear screen / SDL window to the background color
 void clear_screen(const CONFIG_T config, const SDL_T sdl) {
-    // Extract RGBA components from background color
-
     // Right shift bg_color by 24 positions, then extract the lowest 8 bits and store in r
     const uint8_t r = (config.bg_color >> 24) & 0xFF;
     // Right shift bg_color by 16 positions, then extract the lowest 8 bits and store in g
@@ -178,10 +170,8 @@ void clear_screen(const CONFIG_T config, const SDL_T sdl) {
     // Extract the lowest 8 bits of bg_color and store in a
     const uint8_t a = (config.bg_color >> 0) & 0xFF;
 
-    // Set the rendering draw color to the background color
-    SDL_SetRenderDrawColor(sdl.renderer, r, g, b, a);
-    // Clear the renderer
-    SDL_RenderClear(sdl.renderer);
+    SDL_SetRenderDrawColor(sdl.renderer, r, g, b, a); // Set the rendering draw color to the background color
+    SDL_RenderClear(sdl.renderer); // Clear the renderer
 }
 
 // Update the screen
@@ -218,13 +208,10 @@ void update_screen(const SDL_T sdl, const CONFIG_T config, const CHIP_8 chip8) {
         }
     }
 
-    // Present the renderer to the window
-    SDL_RenderPresent(sdl.renderer);
+    SDL_RenderPresent(sdl.renderer); // Present the renderer to the window
 }
 
-void update_timers(CHIP_8 *chip8) {
-    if (chip8->delay_timer > 0) chip8->delay_timer--;
-}
+void update_timers(CHIP_8 *chip8) { if (chip8->delay_timer > 0) chip8->delay_timer--; }
 
 // Handle user input events
 void handle_input(CHIP_8 *chip8) {
@@ -241,7 +228,7 @@ void handle_input(CHIP_8 *chip8) {
             case SDL_KEYDOWN:
                 switch (event.key.keysym.sym) {
                     case SDLK_ESCAPE:
-                        // Escape key; Exit window & End program
+                        // Escape key; Exit window; End program
                         chip8->state = QUIT;
                         break;
 
@@ -254,7 +241,7 @@ void handle_input(CHIP_8 *chip8) {
                             chip8->state = RUNNING; // Resume
                         } break;
 
-                        // Map qwerty keys to CHIP8 keypad
+                    // Map qwerty keys to CHIP8 keypad
                     case SDLK_1: chip8->keypad[0x1] = true; break; // 1 -> 1
                     case SDLK_2: chip8->keypad[0x2] = true; break; // 2 -> 2
                     case SDLK_3: chip8->keypad[0x3] = true; break; // 3 -> 3
@@ -312,25 +299,19 @@ void handle_input(CHIP_8 *chip8) {
 // Emulate CHIP-8 instruction
 void emulate_instructions(CHIP_8 *chip8, const CONFIG_T config) {
     bool carry; // Carry flag
+    uint8_t X_coord;
+    uint8_t Y_coord;
+    uint8_t orig_X;
 
     // Fetch the next 16-bit opcode from memory (RAM) by combining the higher 8 bits from the current address with the lower 8 bits from the next address
     chip8->inst.opcode = (chip8->ram[chip8->PC] << 8) | chip8->ram[chip8->PC + 1];
     chip8->PC += 2; // Pre-increment program counter for next opcode
 
-    // Extract the lowest 12 bits of opcode and store in NNN (High-Bit)
-    chip8->inst.NNN = chip8->inst.opcode & 0x0FFF;
-    // Extract the lowest 8 bits of opcode and store in NN (Middle-Bit)
-    chip8->inst.NN = chip8->inst.opcode & 0x0FF;
-    // Extract the lowest 4 bits of opcode and store in N (Low-Bit)
-    chip8->inst.N = chip8->inst.opcode & 0x0F;
-    // Right shift opcode by 8 positions, then extract the lowest 4 bits and store in X
-    chip8->inst.X = (chip8->inst.opcode >> 8) & 0x0F;
-    // Right shift opcode by 4 positions, then extract the lowest 4 bits and store in Y
-    chip8->inst.Y = (chip8->inst.opcode >> 4) & 0x0F;
-
-    uint8_t X_coord;
-    uint8_t Y_coord;
-    uint8_t orig_X;
+    chip8->inst.NNN = chip8->inst.opcode & 0x0FFF; // Extract the lowest 12 bits of opcode and store in NNN (High-Bit)
+    chip8->inst.NN = chip8->inst.opcode & 0x0FF; // Extract the lowest 8 bits of opcode and store in NN (Middle-Bit)
+    chip8->inst.N = chip8->inst.opcode & 0x0F; // Extract the lowest 4 bits of opcode and store in N (Low-Bit)
+    chip8->inst.X = (chip8->inst.opcode >> 8) & 0x0F; // Right shift opcode by 8 positions, then extract the lowest 4 bits and store in X
+    chip8->inst.Y = (chip8->inst.opcode >> 4) & 0x0F; // Right shift opcode by 4 positions, then extract the lowest 4 bits and store in Y
 
     // Emulate opcode
     switch ((chip8->inst.opcode >> 12) & 0x0F) { // Extract 4 LSB and mask with 15
@@ -343,18 +324,14 @@ void emulate_instructions(CHIP_8 *chip8, const CONFIG_T config) {
                 // Grab last address from subroutine stack ("pop")
                 // so that the next opcode will be obtained from address
                 chip8->PC = *--chip8->stack_ptr; // Obtain address from stack and assign to program counter
-                // Debug information
                 SDL_Log("0x00EE: Return from subroutine. PC set to %04X", chip8->PC);
             } else {
-                // Invalid opcode; may be 0xNNN for calling machine code routine for RCA1802
-                // Debug information
-                SDL_Log("0x00: Invalid opcode. Ignoring instruction.");
+                SDL_Log("0x00: Invalid opcode. Ignoring instruction."); // Invalid opcode
             } break;
         case 0x01:
             // 0x1NNN: Jump to address NNN
             SDL_Log("Before jump. PC: %04X", chip8->PC);
             chip8->PC = chip8->inst.NNN; // Set program counter so that the next opcode is from NNN
-            // Debug information
             SDL_Log("0x01: Jump to address NNN. PC set to %04X", chip8->PC);
             break;
         case 0x02:
@@ -365,43 +342,37 @@ void emulate_instructions(CHIP_8 *chip8, const CONFIG_T config) {
             *chip8->stack_ptr++ = chip8->PC; // Save current program counter on stack; increment stack pointer
             SDL_Log("Stack pointer after push: %p", (void*)chip8->stack_ptr);
             chip8->PC = chip8->inst.NNN; // Extract 12-bit and assign to program counter
-            // Debug information
             SDL_Log("0x02: Call subroutine at NNN. PC set to %04X", chip8->PC);
             break;
         case 0x03:
             // 0x3XNN: Check if VX == NN, if so, skip next instruction
             if (chip8->V[chip8->inst.X] == chip8->inst.NN) {
                 chip8->PC += 2; // Skips instruction
-                // Debug information
                 SDL_Log("0x03: Skip next instruction. VX[%X] == NN(%X)", chip8->inst.X, chip8->inst.NN);
             } break;
         case 0x04:
             // 0x4XNN: Check if VX != NN, if so, skip next instruction
             if (chip8->V[chip8->inst.X] != chip8->inst.NN) {
                 chip8->PC += 2; // Skips instruction
-                // Debug information
                 SDL_Log("0x04: Skip next instruction. VX[%X] != NN(%X)", chip8->inst.X, chip8->inst.NN);
             } break;
         case 0x05:
             // 0x5XY0: Check if VX == VY, if so, skip next instruction
             if (chip8->inst.N != 0) {
                 SDL_Log("0x05: Invalid opcode. Ignoring instruction.");
-                break; }
-            if (chip8->V[chip8->inst.X] == chip8->V[chip8->inst.Y]) {
+                break;
+            } if (chip8->V[chip8->inst.X] == chip8->V[chip8->inst.Y]) {
                 chip8->PC += 2;
-                // Debug information
                 SDL_Log("0x05: Skip next instruction. VX[%X] == VY[%X]", chip8->inst.X, chip8->inst.Y);
             } break;
         case 0x06:
             // 0x6XNN: Set register VX to NN
             chip8->V[chip8->inst.X] = chip8->inst.NN;
-            // Debug information
             SDL_Log("0x06: Set VX[%X] to NN(%X)", chip8->inst.X, chip8->inst.NN);
             break;
         case 0x07:
             // 0x7XNN: Set register VX += NN
             chip8->V[chip8->inst.X] += chip8->inst.NN;
-            // Debug information
             SDL_Log("0x07: Add NN(%X) to VX[%X]", chip8->inst.NN, chip8->inst.X);
             break;
         case 0x08:
@@ -409,7 +380,6 @@ void emulate_instructions(CHIP_8 *chip8, const CONFIG_T config) {
                 case 0:
                     // 0x8XY0: Assignment (VX, VY)
                     chip8->V[chip8->inst.X] = chip8->V[chip8->inst.Y];
-                    // Debug information
                     SDL_Log("0x08XY0: VX[%X] = VY[%X]", chip8->inst.X, chip8->inst.Y);
                     break;
                 case 1:
@@ -417,25 +387,29 @@ void emulate_instructions(CHIP_8 *chip8, const CONFIG_T config) {
                     chip8->V[chip8->inst.X] |= chip8->V[chip8->inst.Y];
                     if (config.current_ex == CHIP8)
                         chip8->V[0xF] = 0;  // Reset VF to 0
+                    SDL_Log("DEBUG: Executed 0x8XY1 instruction. V[%X] = V[%X] | V[%X]", chip8->inst.X, chip8->inst.X, chip8->inst.Y);
                     break;
+
                 case 2:
                     // 0x8XY2: Set register VX &= VY
                     chip8->V[chip8->inst.X] &= chip8->V[chip8->inst.Y];
                     if (config.current_ex == CHIP8)
                         chip8->V[0xF] = 0;  // Reset VF to 0
+                    SDL_Log("DEBUG: Executed 0x8XY2 instruction. V[%X] = V[%X] & V[%X]", chip8->inst.X, chip8->inst.X, chip8->inst.Y);
                     break;
+
                 case 3:
                     // 0x8XY3: Set register VX ^= VY
                     chip8->V[chip8->inst.X] ^= chip8->V[chip8->inst.Y];
                     if (config.current_ex == CHIP8)
                         chip8->V[0xF] = 0;  // Reset VF to 0
+                    SDL_Log("DEBUG: Executed 0x8XY3 instruction. V[%X] = V[%X] ^ V[%X]", chip8->inst.X, chip8->inst.X, chip8->inst.Y);
                     break;
                 case 4:
                     // 0x08XY4: Bitwise ADD_CARRY (VX, VY) 1 if carry 0 if not
                     carry = ((uint16_t)(chip8->V[chip8->inst.X] + chip8->V[chip8->inst.Y]) > 255);
                     chip8->V[chip8->inst.X] += chip8->V[chip8->inst.Y];
                     chip8->V[0xF] = carry; // Set last data register to carry
-                    // Debug information
                     SDL_Log("0x08XY4: VX[%X] += VY[%X]. Carry: %d", chip8->inst.X, chip8->inst.Y, carry);
                     break;
                 case 5:
@@ -443,7 +417,6 @@ void emulate_instructions(CHIP_8 *chip8, const CONFIG_T config) {
                     carry = (chip8->V[chip8->inst.Y] <= chip8->V[chip8->inst.X]); // Check for borrow
                     chip8->V[chip8->inst.X] -= chip8->V[chip8->inst.Y];
                     chip8->V[0xF] = carry; // Set last data register to carry
-                    // Debug information
                     SDL_Log("0x08XY5: VX[%X] -= VY[%X]. Borrow: %d", chip8->inst.X, chip8->inst.Y, !carry);
                     break;
                 case 6:
@@ -455,8 +428,7 @@ void emulate_instructions(CHIP_8 *chip8, const CONFIG_T config) {
                         carry = chip8->V[chip8->inst.X] & 1;    // Use VX
                         chip8->V[chip8->inst.X] >>= 1;          // Use VX
                     }
-                    chip8->V[0xF] = carry;
-                    // Debug information
+                    chip8->V[0xF] = carry; // Set last data register to carry
                     SDL_Log("DEBUG: Executed 0x8%X (SHR V%X, V%X) instruction. Shifted VX >>= 1. VF = %d", chip8->inst.opcode & 0x00FF, chip8->inst.X, chip8->inst.Y, chip8->V[0xF]);
                     break;
                 case 7:
@@ -464,7 +436,6 @@ void emulate_instructions(CHIP_8 *chip8, const CONFIG_T config) {
                     carry = (chip8->V[chip8->inst.X] <= chip8->V[chip8->inst.Y]); // Check for borrow
                     chip8->V[chip8->inst.X] = chip8->V[chip8->inst.Y] - chip8->V[chip8->inst.X];
                     chip8->V[0xF] = carry; // Set last data register to carry
-                    // Debug information
                     SDL_Log("0x08XY7: VX[%X] = VY[%X] - VX[%X]. Borrow: %d", chip8->inst.X, chip8->inst.Y, chip8->inst.X, !carry);
                     break;
                 case 0xE:
@@ -476,8 +447,7 @@ void emulate_instructions(CHIP_8 *chip8, const CONFIG_T config) {
                         carry = (chip8->V[chip8->inst.X] & 0x80) >> 7;  // VX
                         chip8->V[chip8->inst.X] <<= 1;                  // Use VX
                     }
-                    chip8->V[0xF] = carry;
-                    // Debug information
+                    chip8->V[0xF] = carry; // Set last data register to carry
                     SDL_Log("DEBUG: Executed 0x8%X (SHL V%X, V%X) instruction. Shifted VX <<= 1. VF = %d", chip8->inst.opcode & 0x00FF, chip8->inst.X, chip8->inst.Y, chip8->V[0xF]);
                     break;
                 default: break; // Invalid opcode
@@ -491,19 +461,16 @@ void emulate_instructions(CHIP_8 *chip8, const CONFIG_T config) {
         case 0x0A:
             // 0x0ANNN: Set index register I to NNN
             chip8->I = chip8->inst.NNN;
-            // Debug information
             SDL_Log("0x0ANNN: I set to %04X", chip8->I);
             break;
         case 0x0B:
             // 0x0BNNN: Jump to V0 + NNN
             chip8->PC = chip8->V[0] + chip8->inst.NNN; // Set program counter to sum of the first data register and the 12-bit address
-            // Debug information
             SDL_Log("0x0BNNN: Jump to V0 + NNN. PC set to %04X", chip8->PC);
             break;
         case 0x0C:
             // 0x0CNNN: Sets register VX = rand() % 256 & NN (Bitwise AND)
             chip8->V[chip8->inst.X] = (rand() % 256) & chip8->inst.NN;
-            // Debug information
             SDL_Log("0x0CNNN: VX[%X] = rand() %% 256 & NN(%X)", chip8->inst.X, chip8->inst.NN);
             break;
         case 0x0D:
@@ -518,8 +485,7 @@ void emulate_instructions(CHIP_8 *chip8, const CONFIG_T config) {
 
             // Loop over all N rows of sprite
             for (uint8_t i = 0; i < chip8->inst.N; i++) {
-                // Get next byte/row of sprite data
-                const uint8_t sprite_data = chip8->ram[chip8->I + i];
+                const uint8_t sprite_data = chip8->ram[chip8->I + i]; // Get next byte/row of sprite data
                 X_coord = orig_X; // Reset X for next row to draw
 
                 // Loop over each individual pixel in the sprite row
@@ -527,25 +493,17 @@ void emulate_instructions(CHIP_8 *chip8, const CONFIG_T config) {
                     // Get a pointer to the display pixel at the current (X, Y) coordinates
                     bool *pixel = &chip8->display[Y_coord * config.window_width + X_coord];
 
-                    // Extract the j-th bit (pixel) from the sprite data
-                    const bool sprite_bit = (sprite_data & (1 << j));
+                    const bool sprite_bit = (sprite_data & (1 << j)); // Extract the j-th bit (pixel) from the sprite data
 
-                    // If both the sprite bit and the display pixel are set (both on), set the carry flag (VF) (last data register) to 1
                     if (sprite_bit && *pixel) {
                         chip8->V[0xF] = 1;
-                    }
+                    } // If both the sprite bit and the display pixel are set (both on), set the carry flag (VF) (last data register) to 1
 
-                    // XOR the display pixel with the sprite bit
-                    *pixel ^= sprite_bit;
+                    *pixel ^= sprite_bit; // XOR the display pixel with the sprite bit
 
-                    // Stop drawing if hit right edge of the screen
-                    if (++X_coord >= config.window_width) break;
-                }
-
-                // Stop drawing entire sprite if hit bottom edge of the screen
-                if (++Y_coord >= config.window_height) break;
+                    if (++X_coord >= config.window_width) break; // Stop drawing if hit right edge of the screen
+                } if (++Y_coord >= config.window_height) break; // Stop drawing entire sprite if hit bottom edge of the screen
             }
-            // Debug information
             SDL_Log("0x0DXYN: Draw sprite. VF(Carry): %d", chip8->V[0xF]);
             SDL_Log("Program Counter after 0x0DXYN: 0x%04X", chip8->PC);
             break;
@@ -554,14 +512,12 @@ void emulate_instructions(CHIP_8 *chip8, const CONFIG_T config) {
                 // 0x0EX9E: Skip next instruction if key in VX pressed
                 if (chip8->keypad[chip8->V[chip8->inst.X]]) {
                     chip8->PC += 2;
-                    // Debug information
                     SDL_Log("0x0EX9E: Skip next instruction. Key in V[%d] is pressed", chip8->inst.X);
                 }
             } else if (chip8->inst.NN == 0xA1) {
                 // 0x0EXA1: Skip next instruction if key in VX not pressed
                 if (!chip8->keypad[chip8->V[chip8->inst.X]]) {
                     chip8->PC += 2;
-                    // Debug information
                     SDL_Log("0x0EXA1: Skip next instruction. Key in V[%d] is not pressed", chip8->inst.X);
                 }
             } break;
@@ -577,10 +533,7 @@ void emulate_instructions(CHIP_8 *chip8, const CONFIG_T config) {
                             chip8->V[chip8->inst.X] = i; // i = key offset for keypad array
                             anykey_pressed = true;
                         }
-                    }
-
-                    // If no key pressed, keep getting the current opcode & running instruction
-                    if (!anykey_pressed) {
+                    } if (!anykey_pressed) { // If no key pressed, keep getting the current opcode & running instruction
                         chip8->PC -= 2;
                         SDL_Log("0xFX0A: Waiting for key press. PC decremented to %04X", chip8->PC);
                     } else {
@@ -634,7 +587,6 @@ void emulate_instructions(CHIP_8 *chip8, const CONFIG_T config) {
                             chip8->ram[chip8->I + i] = chip8->V[i];
                         }
                     }
-                    // Debug information
                     SDL_Log("DEBUG: Executed 0x55 (LD [I], Vx) instruction. Dumped registers V0-V%X to memory at address I.", chip8->inst.X);
                     break;
                 case 0x65:
@@ -647,7 +599,7 @@ void emulate_instructions(CHIP_8 *chip8, const CONFIG_T config) {
                             chip8->V[i] = chip8->ram[chip8->I + i];
                         }
                     }
-                    // Debug information
+                    
                     SDL_Log("DEBUG: Executed 0x65 (LD Vx, [I]) instruction. Loaded registers V0-V%X from memory at address I.", chip8->inst.X);
                     break;
             } break;
@@ -663,54 +615,44 @@ int main(int argc, char *argv[]) {
     if (argc < 2) {
         fprintf(stderr, "Usage: %s <rom_name>\n", argv[0]);
         exit(EXIT_FAILURE); }
-
-    // Initialize emulator options
-    CONFIG_T config = {0};
+    
+    CONFIG_T config = {0}; // Initialize emulator options
     if (!set_config_from_args(&config, argc, (const char **) argv)) exit(EXIT_FAILURE);
-
-    // Initialize SDL
-    SDL_T sdl = {nullptr};
+    
+    SDL_T sdl = {nullptr}; // Initialize SDL
     if (!INIT(&sdl, config)) exit(EXIT_FAILURE);
-
-    // Initialize CHIP-8 machine
+    
     CHIP_8 chip8 = {};
     const char *rom_name = argv[1];
-    if (!init_chip8(&chip8, rom_name)) exit(EXIT_FAILURE);
-
-    // Initial screen clear
-    clear_screen(config, sdl);
+    if (!init_chip8(&chip8, rom_name)) exit(EXIT_FAILURE); // Initialize CHIP-8 machine
+    
+    clear_screen(config, sdl); // Initial screen clear
 
     // Main emulator loop
     while (chip8.state != QUIT) {
-        // Handle user input
-        handle_input(&chip8);
+        handle_input(&chip8); // Handle user input
 
         if (chip8.state == PAUSED) continue;
-
-        // Time before instruction
-        const uint64_t before_frame = SDL_GetPerformanceCounter();
+        
+        const uint64_t before_frame = SDL_GetPerformanceCounter(); // Time before instruction
 
         // Emulate instructions
         for (uint32_t i = 0; i < config.clock_rate / 60; i++)
             emulate_instructions(&chip8, config);
-
-        // Time taken to run instruction (Elapsed)
-        const uint64_t after_frame = SDL_GetPerformanceCounter();
+        
+        const uint64_t after_frame = SDL_GetPerformanceCounter(); // Time taken to run instruction (Elapsed)
 
         // Calculate time elapsed in seconds between two frames and store the result in the variable time_elapsed
         const double time_elapsed = (double)((after_frame - before_frame) / 1000) / SDL_GetPerformanceFrequency();
 
         if (16.67f > time_elapsed) SDL_Delay(16.67f - time_elapsed);
-
-        // Clear the screen
+        
         clear_screen(config, sdl);
-
-        // Draw the display
+        
         update_screen(sdl, config, chip8);
         update_timers(&chip8);
     }
-
-    // Final cleanup
+    
     final_cleanup(sdl);
     exit(EXIT_SUCCESS);
 }
