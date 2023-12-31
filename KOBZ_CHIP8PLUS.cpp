@@ -8,7 +8,7 @@ using namespace std;
 class SDL_T {
     public:
         SDL_Window *window;     // Window
-        SDL_Renderer *renderer; // Renderer 
+        SDL_Renderer *renderer; // Renderer
 };
 
 enum EXTENSION_T {
@@ -276,7 +276,6 @@ void handle_input(CHIP_8 *chip8) {
                     case SDLK_v: chip8->keypad[0xF] = true; break; // F -> v
 
                     default: break;
-
                 } break;
 
             case SDL_KEYUP:
@@ -318,8 +317,6 @@ void emulate_instructions(CHIP_8 *chip8, const CONFIG_T config) {
     chip8->inst.opcode = (chip8->ram[chip8->PC] << 8) | chip8->ram[chip8->PC + 1];
     chip8->PC += 2; // Pre-increment program counter for next opcode
 
-    uint8_t orig_X; // Store original X coordinate
-
     // Extract the lowest 12 bits of opcode and store in NNN (High-Bit)
     chip8->inst.NNN = chip8->inst.opcode & 0x0FFF;
     // Extract the lowest 8 bits of opcode and store in NN (Middle-Bit)
@@ -333,6 +330,7 @@ void emulate_instructions(CHIP_8 *chip8, const CONFIG_T config) {
 
     uint8_t X_coord;
     uint8_t Y_coord;
+    uint8_t orig_X;
 
     // Emulate opcode
     switch ((chip8->inst.opcode >> 12) & 0x0F) { // Extract 4 LSB and mask with 15

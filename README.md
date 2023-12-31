@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This project is a simple CHIP-8 emulator written in C. The emulator is designed to run CHIP-8 programs, which are interpreted programming language originally used on the COSMAC VIP and Telmac 1800 8-bit microcomputers.
+This project is a simple CHIP-8 emulator written in C++. The emulator is designed to run CHIP-8 programs, which are interpreted programming language originally used on the COSMAC VIP and Telmac 1800 8-bit microcomputers.
 
 ## Features
 
@@ -14,7 +14,7 @@ This project is a simple CHIP-8 emulator written in C. The emulator is designed 
 
 ## How to Get Started
 - ROM Files are found in CMake Build Debug | Root Folder contains TXT files with instructions to each game respectively
-- Start off by cloning the repo in your terminal of choice `git clone https://github.com/kobisanv/CCHIPATESDL-KOBZ.git`
+- Start off by cloning the repo in your terminal of choice `git clone https://github.com/kobisanv/CHIPATEPLUSDL-KOBZ.git`
 - From the directory enter `CHIP_8__.exe "rom_file.ch8"` for Windows, and `./CHIP_8__.exe rom_file.ch8` for Mac/Linux
 - The last step is to enjoy the game! For controls, please refer below!
 
