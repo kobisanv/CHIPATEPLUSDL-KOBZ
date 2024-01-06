@@ -307,9 +307,9 @@ void emulate_instructions(CHIP_8 *chip8, const CONFIG_T config) {
     chip8->inst.opcode = (chip8->ram[chip8->PC] << 8) | chip8->ram[chip8->PC + 1];
     chip8->PC += 2; // Pre-increment program counter for next opcode
 
-    chip8->inst.NNN = chip8->inst.opcode & 0x0FFF; // Extract the lowest 12 bits of opcode and store in NNN (High-Bit)
+    chip8->inst.NNN = chip8->inst.opcode & 0x0FFF;// Extract the lowest 12 bits of opcode and store in NNN (High-Bit)
     chip8->inst.NN = chip8->inst.opcode & 0x0FF; // Extract the lowest 8 bits of opcode and store in NN (Middle-Bit)
-    chip8->inst.N = chip8->inst.opcode & 0x0F; // Extract the lowest 4 bits of opcode and store in N (Low-Bit)
+    chip8->inst.N = chip8->inst.opcode & 0x0F;  // Extract the lowest 4 bits of opcode and store in N (Low-Bit)
     chip8->inst.X = (chip8->inst.opcode >> 8) & 0x0F; // Right shift opcode by 8 positions, then extract the lowest 4 bits and store in X
     chip8->inst.Y = (chip8->inst.opcode >> 4) & 0x0F; // Right shift opcode by 4 positions, then extract the lowest 4 bits and store in Y
 

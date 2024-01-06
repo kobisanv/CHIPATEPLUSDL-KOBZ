@@ -13,10 +13,9 @@ This project is a simple CHIP-8 emulator written in C++. The emulator is designe
 - Debugging information output to the console.
 
 ## How to Get Started
-- ROM Files are found in CMake Build Debug | Root Folder contains TXT files with instructions to each game respectively
-- Start off by cloning the repo in your terminal of choice `git clone https://github.com/kobisanv/CHIPATEPLUSDL-KOBZ.git`
-- From the directory enter `CHIP_8__.exe "rom_file.ch8"` for Windows, and `./CHIP_8__.exe rom_file.ch8` for Mac/Linux
-- The last step is to enjoy the game! For controls, please refer below!
+- Install SDL.
+- Clone the repository into your local machine.
+- Build the project and run the EXE file or APP file with your preferred ROM file!
 
 ## Controls
 - The TXT file may say some keys to press, however when trying it out for yourself, you may realize that the QWERTY keys do not correspond to the CHIP-8 keypad
