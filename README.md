@@ -1,4 +1,4 @@
-# CHIP-8 Emulator
+# CHIP-8 Emulator Built with SDL in C++
 
 ## Introduction
 
